@@ -1,0 +1,49 @@
+
+import scala.concurrent.duration._
+
+import io.gatling.core.Predef._
+import io.gatling.http.Predef._
+import io.gatling.jdbc.Predef._
+
+class GatlingSite extends Simulation {
+
+  val httpProtocol = http
+    .baseUrl("http://computer-database.gatling.io")
+    //.inferHtmlResources()
+    .acceptEncodingHeader("gzip, deflate")
+    .acceptLanguageHeader("en-US,en;q=0.5")
+    .upgradeInsecureRequestsHeader("1")
+    .userAgentHeader("Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:68.0) Gecko/20100101 Firefox/68.0")
+
+
+
+
+
+  val scn = scenario("GatlingSite ")
+    .exec(http("request_0")
+      .get("/computers"))
+    .pause(7)
+
+//.check( bodyString.saveAs( "SystemID" ) )
+
+    .exec(http("request_1")
+      .get("/computers/new")
+    .check(regex("""option value="(.+?)" >""")
+	.findAll
+	.saveAs( key = "SystemID")))
+
+val selectRandomElementInList = (list: Seq["SystemID"]) => {
+  val randomIndex = randomData.nextInt(0, list.size - 1)
+  list(randomIndex)
+}
+	
+    .pause(13)
+    .exec(http("request_2")
+      .post("/computers")
+      .formParam("name", "THEJ")
+      .formParam("introduced", "")
+      .formParam("discontinued", "")
+      .formParam("company", "${randomIndex}"))
+
+  setUp(scn.inject(atOnceUsers(1))).protocols(httpProtocol)
+}
